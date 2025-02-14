@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { 
   Button, 
@@ -15,12 +15,28 @@ const API_URL = 'https://localhost:7211/api/tren';
 const Tren = () => {
   const [vagones, setVagones] = useState([]);
   const [numero, setNumero] = useState('');
+  const [usingLocalStorage, setUsingLocalStorage] = useState(false);
+
+  useEffect(() => {
+    // Load initial state from localStorage if exists
+    const savedVagones = localStorage.getItem('vagones');
+    if (savedVagones) {
+      setVagones(JSON.parse(savedVagones));
+      setUsingLocalStorage(true);
+    }
+  }, []);
+
+  const handleLocalStorage = (newVagones) => {
+    localStorage.setItem('vagones', JSON.stringify(newVagones));
+    setVagones(newVagones);
+  };
 
   const engancharVagon = async (posicion) => {
     if (!numero) {
       alert('Por favor ingresa un número de vagón');
       return;
     }
+
     try {
       const response = await axios.post(`${API_URL}/enganchar`, {
         numero: parseInt(numero),
@@ -28,9 +44,20 @@ const Tren = () => {
       });
       setVagones(response.data.tren);
       setNumero('');
+      setUsingLocalStorage(false);
     } catch (error) {
       console.error('Error al enganchar vagón:', error);
-      alert('Error al enganchar el vagón');
+      // Fallback to localStorage
+      const nuevoVagon = parseInt(numero);
+      const nuevosVagones = [...vagones];
+      if (posicion === 'izquierda') {
+        nuevosVagones.unshift(nuevoVagon);
+      } else {
+        nuevosVagones.push(nuevoVagon);
+      }
+      handleLocalStorage(nuevosVagones);
+      setNumero('');
+      setUsingLocalStorage(true);
     }
   };
 
@@ -40,9 +67,18 @@ const Tren = () => {
         posicion
       });
       setVagones(response.data.tren);
+      setUsingLocalStorage(false);
     } catch (error) {
       console.error('Error al desenganchar vagón:', error);
-      alert('Error al desenganchar el vagón');
+      // Fallback to localStorage
+      const nuevosVagones = [...vagones];
+      if (posicion === 'izquierda') {
+        nuevosVagones.shift();
+      } else {
+        nuevosVagones.pop();
+      }
+      handleLocalStorage(nuevosVagones);
+      setUsingLocalStorage(true);
     }
   };
 
@@ -52,7 +88,12 @@ const Tren = () => {
         <Typography variant="h4" component="h1" gutterBottom align="center">
           Simulador de Tren
         </Typography>
-        
+        {usingLocalStorage && (
+          <Typography color="warning.main" align="center" gutterBottom>
+            Usando almacenamiento local (servicio no disponible)
+          </Typography>
+        )}
+        {/* Rest of your JSX remains the same */}
         <Stack spacing={3}>
           <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
             <TextField
