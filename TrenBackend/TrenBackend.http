@@ -1,0 +1,6 @@
+@TrenBackend_HostAddress = http://localhost:5049
+
+GET {{TrenBackend_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
